@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('partials/head') %></head>
+<body>
+  <%- include('partials/header') %>
+  <main>
+    <div class="hero">
+      <div class="wrap">
+        <h1><%= company.tagline %></h1>
+        <p>From EV traction packs to solar OEM and LiFePO4 cells — we engineer every pack to your cell, BMS, voltage and Ah specification, with full traceability.</p>
+        <a class="btn" href="/products">Browse the catalogue →</a>
+      </div>
+    </div>
+
+    <section class="wrap">
+      <h2>Featured packs</h2>
+      <div class="grid">
+        <% products.forEach(function(p){ %>
+          <a class="card" href="/products/<%= p.slug %>">
+            <img src="<%= (p.images && p.images[0] && p.images[0].url) || 'https://placehold.co/600x400?text=Battery' %>" alt="<%= (p.images && p.images[0] && p.images[0].alt) || p.name %>" loading="lazy" width="600" height="400" />
+            <div class="body">
+              <h3><%= p.name %></h3>
+              <p style="color:#64748b; margin:0 0 8px; font-size:14px"><%= p.shortDesc %></p>
+              <div class="price">From ₹<%= p.priceFrom.toLocaleString('en-IN') %></div>
+            </div>
+          </a>
+        <% }) %>
+        <% if (!products.length) { %><p>Catalogue coming soon.</p><% } %>
+      </div>
+    </section>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

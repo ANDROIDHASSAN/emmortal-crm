@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <%- include('partials/head') %>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "<%= product.name %>",
+    "description": "<%= seo.description %>",
+    "category": "<%= product.category %>",
+    "image": "<%= (product.images && product.images[0] && product.images[0].url) || '' %>",
+    "brand": { "@type": "Brand", "name": "<%= company.name %>" },
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "INR",
+      "price": "<%= product.priceFrom %>",
+      "availability": "https://schema.org/InStock",
+      "url": "<%= seo.canonical %>"
+    }
+  }
+  </script>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="wrap">
+    <section style="display:grid; grid-template-columns:1fr; gap:28px;">
+      <div>
+        <p style="margin:0 0 8px"><a href="/products">← Back to catalogue</a></p>
+        <h1><%= product.name %></h1>
+        <p style="color:#64748b; font-size:18px"><%= product.shortDesc %></p>
+        <img src="<%= (product.images && product.images[0] && product.images[0].url) || 'https://placehold.co/800x500?text=Battery' %>" alt="<%= (product.images && product.images[0] && product.images[0].alt) || product.name %>" style="width:100%; max-width:640px; border-radius:12px; margin:16px 0" loading="lazy" />
+        <div class="specs">
+          <% if (product.specs && product.specs.voltage) { %><span><%= product.specs.voltage %>V</span><% } %>
+          <% if (product.specs && product.specs.ah) { %><span><%= product.specs.ah %>Ah</span><% } %>
+          <% if (product.specs && product.specs.cell) { %><span>Cell: <%= product.specs.cell %></span><% } %>
+          <% if (product.specs && product.specs.bms) { %><span>BMS: <%= product.specs.bms %></span><% } %>
+          <% if (product.specs && product.specs.sizeMm) { %><span><%= product.specs.sizeMm %></span><% } %>
+        </div>
+        <p class="price" style="font-size:22px">From ₹<%= product.priceFrom.toLocaleString('en-IN') %></p>
+        <% if (product.longDesc) { %><h2>Details</h2><p><%= product.longDesc %></p><% } %>
+      </div>
+
+      <div>
+        <h2>Buy Now — request a quote</h2>
+        <form class="enquiry" id="enquiryForm">
+          <input type="hidden" name="productInterest" value="<%= product.name %>" />
+          <!-- honeypot -->
+          <input class="hp" type="text" name="company_website" tabindex="-1" autocomplete="off" />
+          <label for="name">Your name *</label>
+          <input id="name" name="name" required maxlength="120" />
+          <label for="phone">Phone</label>
+          <input id="phone" name="phone" maxlength="20" />
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" />
+          <label for="qty">Quantity</label>
+          <input id="qty" name="qty" type="number" min="1" value="1" />
+          <label for="message">Message</label>
+          <textarea id="message" name="message" rows="3" placeholder="Tell us your voltage/Ah requirements"></textarea>
+          <button class="btn solid" type="submit" style="margin-top:16px; border:0; cursor:pointer">Send enquiry</button>
+          <p id="result" style="margin-top:12px"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+  <%- include('partials/footer') %>
+
+  <script>
+    document.getElementById('enquiryForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const result = document.getElementById('result');
+      const data = Object.fromEntries(new FormData(this).entries());
+      result.textContent = 'Sending…';
+      try {
+        const r = await fetch('/api/v1/public/enquiry', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+        if (r.ok) {
+          result.className = 'ok';
+          result.textContent = 'Thank you! Our team will contact you shortly.';
+          this.reset();
+        } else {
+          const j = await r.json().catch(() => ({}));
+          result.className = 'err';
+          result.textContent = (j.error && j.error.message) || 'Something went wrong. Please call us.';
+        }
+      } catch (err) {
+        result.className = 'err';
+        result.textContent = 'Network error. Please try again.';
+      }
+    });
+  </script>
+</body>
+</html>

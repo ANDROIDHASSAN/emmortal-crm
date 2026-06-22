@@ -1,0 +1,6 @@
+guid,date,kind,gst,party,amount,tax,voucherno,narration
+TALLY-0001,2026-04-01 10:15,sales,yes,GreenRide EV Pvt Ltd,50000,9000,SAL-2001,Sale of 48V packs
+TALLY-0002,2026-04-02 11:30,purchase,yes,Nashik Cells Co,30000,5400,PUR-3001,LiFePO4 cells purchase
+TALLY-0003,2026-04-03 09:00,expense,no,GreenRide EV Pvt Ltd,2500,0,EXP-4001,Courier charges
+TALLY-0004,2026-04-04 16:45,sales,no,SolarMax OEM,18000,0,SAL-2002,Solar OEM pack
+TALLY-0005,2026-04-05 14:20,sales,yes,GreenRide EV Pvt Ltd,75000,13500,SAL-2003,Bulk EV order

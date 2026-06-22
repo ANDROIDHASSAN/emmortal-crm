@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><%- include('partials/head') %></head>
+<body>
+  <%- include('partials/header') %>
+  <main class="wrap">
+    <section>
+      <h1>Battery Catalogue</h1>
+      <p style="color:#64748b">Every pack is built to order. Tap a product and hit <strong>Buy Now</strong> to get a quote.</p>
+      <div class="grid">
+        <% products.forEach(function(p){ %>
+          <a class="card" href="/products/<%= p.slug %>">
+            <img src="<%= (p.images && p.images[0] && p.images[0].url) || 'https://placehold.co/600x400?text=Battery' %>" alt="<%= (p.images && p.images[0] && p.images[0].alt) || p.name %>" loading="lazy" width="600" height="400" />
+            <div class="body">
+              <h3><%= p.name %></h3>
+              <div class="specs">
+                <% if (p.specs && p.specs.voltage) { %><span><%= p.specs.voltage %>V</span><% } %>
+                <% if (p.specs && p.specs.ah) { %><span><%= p.specs.ah %>Ah</span><% } %>
+                <% if (p.specs && p.specs.cell) { %><span><%= p.specs.cell %></span><% } %>
+              </div>
+              <div class="price">From ₹<%= p.priceFrom.toLocaleString('en-IN') %></div>
+            </div>
+          </a>
+        <% }) %>
+        <% if (!products.length) { %><p>Catalogue coming soon.</p><% } %>
+      </div>
+    </section>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>
