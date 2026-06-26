@@ -3,31 +3,20 @@ import { validate } from '../../middleware/validate.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { rbac } from '../../middleware/rbac.js';
 import { upload } from '../../middleware/upload.js';
-import {
-  listEmployees,
-  createEmployee,
-  updateEmployee,
-  listAttendance,
-  addManualAttendance,
-  esslSync,
-  getPayroll,
-  employeeSchema,
-  employeeUpdateSchema,
-  manualAttendanceSchema,
-} from './hr.controller.js';
+import { listEmployees, createEmployee, updateEmployee, listAttendance, addManualAttendance, esslSync, esslPush, getPayroll, employeeSchema, employeeUpdateSchema, manualAttendanceSchema } from './hr.controller.js';
 
 const router = Router();
-// HR (employee master + attendance) → admin + manager. Payroll also admin/manager.
-const hrRoles = rbac('admin', 'manager');
+const hr = rbac('admin', 'manager');
 
-router.get('/employees', requireAuth, hrRoles, listEmployees);
-router.post('/employees', requireAuth, hrRoles, validate({ body: employeeSchema }), createEmployee);
-router.patch('/employees/:id', requireAuth, hrRoles, validate({ body: employeeUpdateSchema }), updateEmployee);
+// Device push webhook — token-protected, NOT behind requireAuth (no user session).
+router.post('/hr/essl-push', esslPush);
 
-router.get('/attendance', requireAuth, hrRoles, listAttendance);
-router.post('/attendance/manual', requireAuth, hrRoles, validate({ body: manualAttendanceSchema }), addManualAttendance);
-
-router.post('/hr/essl/sync', requireAuth, hrRoles, upload.single('file'), esslSync);
-router.get('/hr/payroll', requireAuth, hrRoles, getPayroll);
+router.get('/employees', requireAuth, hr, listEmployees);
+router.post('/employees', requireAuth, hr, validate({ body: employeeSchema }), createEmployee);
+router.patch('/employees/:id', requireAuth, hr, validate({ body: employeeUpdateSchema }), updateEmployee);
+router.get('/attendance', requireAuth, hr, listAttendance);
+router.post('/attendance/manual', requireAuth, hr, validate({ body: manualAttendanceSchema }), addManualAttendance);
+router.post('/hr/essl/sync', requireAuth, hr, upload.single('file'), esslSync);
+router.get('/hr/payroll', requireAuth, hr, getPayroll);
 
 export default router;

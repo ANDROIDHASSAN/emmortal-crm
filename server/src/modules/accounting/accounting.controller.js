@@ -1,105 +1,85 @@
 import { z } from 'zod';
+import Papa from 'papaparse';
 import { AccountingEntry } from '../../models/AccountingEntry.js';
 import { Party } from '../../models/Party.js';
 import { TallySyncLog } from '../../models/TallySyncLog.js';
 import { ApiError } from '../../utils/ApiError.js';
 import { asyncHandler, parseListQuery, listEnvelope, escapeRegex } from '../../utils/helpers.js';
-import { writeAudit } from '../../utils/audit.js';
-import { runTallySync, entrySummary, partyLedger } from './accounting.service.js';
+import { entrySummary, partyLedger, runTallySync } from './accounting.service.js';
+
+// Build the entries Mongo filter from query (shared by list + export).
+function entryFilter(q) {
+  const filter = {};
+  if (q.kind) filter.kind = q.kind;
+  if (q.gst !== undefined && q.gst !== '') filter.gst = q.gst === 'true';
+  if (q.party) filter.party = q.party;
+  if (q.from || q.to) { filter.occurredAt = {}; if (q.from) filter.occurredAt.$gte = new Date(q.from); if (q.to) filter.occurredAt.$lte = new Date(q.to); }
+  return filter;
+}
 
 export const manualEntrySchema = z.object({
   kind: z.enum(['sales', 'purchase', 'expense']),
-  gst: z.coerce.boolean().default(false),
-  amount: z.coerce.number(),
-  taxAmount: z.coerce.number().default(0),
+  gst: z.boolean().default(false),
+  amount: z.coerce.number().min(0),
+  taxAmount: z.coerce.number().min(0).default(0),
   party: z.string().optional(),
   voucherNo: z.string().optional(),
   narration: z.string().optional(),
-  occurredAt: z.string().min(1),
+  occurredAt: z.string().optional(),
 });
-
 export const partySchema = z.object({
   name: z.string().min(1),
   type: z.enum(['debtor', 'creditor', 'both']).default('both'),
-  phone: z.string().optional(),
-  email: z.string().optional(),
-  gstin: z.string().optional(),
-  address: z.string().optional(),
+  phone: z.string().optional(), email: z.string().optional(), gstin: z.string().optional(), address: z.string().optional(),
   openingBalance: z.coerce.number().default(0),
 });
 
-// Time-machine list: ?kind&gst&from&to&partyId with full datetime range.
 export const listEntries = asyncHandler(async (req, res) => {
   const { page, limit, sort, skip } = parseListQuery(req.query, { defaultSort: '-occurredAt' });
-  const filter = {};
-  if (req.query.kind) filter.kind = req.query.kind;
-  if (req.query.gst !== undefined) filter.gst = req.query.gst === 'true';
-  if (req.query.partyId) filter.party = req.query.partyId;
-  if (req.query.from || req.query.to) {
-    filter.occurredAt = {};
-    if (req.query.from) filter.occurredAt.$gte = new Date(req.query.from);
-    if (req.query.to) filter.occurredAt.$lte = new Date(req.query.to);
-  }
+  const filter = entryFilter(req.query);
   const [data, total] = await Promise.all([
-    AccountingEntry.find(filter).populate('party', 'name type').sort(sort).skip(skip).limit(limit).lean({ virtuals: true }),
+    AccountingEntry.find(filter).populate('party', 'name').sort(sort).skip(skip).limit(limit).lean(),
     AccountingEntry.countDocuments(filter),
   ]);
   res.json(listEnvelope(data, total, page, limit));
 });
 
-export const getSummary = asyncHandler(async (req, res) => {
-  const gst = req.query.gst === undefined ? undefined : req.query.gst === 'true';
-  res.json({ data: await entrySummary({ from: req.query.from, to: req.query.to, gst }) });
+// Export the currently-filtered entries to CSV.
+export const exportEntries = asyncHandler(async (req, res) => {
+  const rows = await AccountingEntry.find(entryFilter(req.query)).populate('party', 'name').sort('-occurredAt').limit(10000).lean();
+  const csv = Papa.unparse(rows.map((e) => ({
+    Date: new Date(e.occurredAt).toISOString().slice(0, 10), Kind: e.kind, GST: e.gst ? 'GST' : 'Non-GST',
+    Amount: e.amount, Tax: e.taxAmount, Total: round2impl(e.amount + (e.taxAmount || 0)), Party: e.party?.name || '', Voucher: e.voucherNo || '', Source: e.source,
+  })));
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="accounting-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send(csv);
 });
+const round2impl = (n) => Math.round((Number(n) + Number.EPSILON) * 100) / 100;
 
 export const createEntry = asyncHandler(async (req, res) => {
-  const entry = await AccountingEntry.create({
-    ...req.body,
-    occurredAt: new Date(req.body.occurredAt),
-    source: 'manual',
-  });
-  await writeAudit({ user: req.user, action: 'create', entity: 'AccountingEntry', entityId: entry._id, after: entry.toObject() });
+  const entry = await AccountingEntry.create({ ...req.body, source: 'manual', occurredAt: req.body.occurredAt ? new Date(req.body.occurredAt) : new Date() });
   res.status(201).json({ data: entry });
 });
+
+export const getSummary = asyncHandler(async (req, res) => res.json({ data: await entrySummary(req.query) }));
 
 export const listParties = asyncHandler(async (req, res) => {
   const { page, limit, sort, q, skip } = parseListQuery(req.query, { defaultSort: 'name' });
   const filter = {};
   if (q) filter.name = new RegExp(escapeRegex(q), 'i');
   if (req.query.type) filter.type = req.query.type;
-  const [data, total] = await Promise.all([
-    Party.find(filter).sort(sort).skip(skip).limit(limit).lean(),
-    Party.countDocuments(filter),
-  ]);
+  const [data, total] = await Promise.all([Party.find(filter).sort(sort).skip(skip).limit(limit).lean(), Party.countDocuments(filter)]);
   res.json(listEnvelope(data, total, page, limit));
 });
 
-export const createParty = asyncHandler(async (req, res) => {
-  const party = await Party.create(req.body);
-  res.status(201).json({ data: party });
-});
+export const createParty = asyncHandler(async (req, res) => res.status(201).json({ data: await Party.create(req.body) }));
 
 export const getLedger = asyncHandler(async (req, res) => {
-  const data = await partyLedger(req.params.id);
-  if (!data) throw ApiError.notFound('Party not found');
-  res.json({ data });
+  const ledger = await partyLedger(req.params.id);
+  if (!ledger) throw ApiError.notFound('Party not found');
+  res.json({ data: ledger });
 });
 
-export const tallySync = asyncHandler(async (req, res) => {
-  const mode = req.body?.mode || req.query.mode;
-  const file = req.file;
-  const log = await runTallySync({
-    mode,
-    fileBuffer: file?.buffer,
-    fileName: file?.originalname,
-    from: req.body?.from,
-    to: req.body?.to,
-  });
-  await writeAudit({ user: req.user, action: 'tally-sync', entity: 'TallySyncLog', entityId: log._id, after: log });
-  res.json({ data: log });
-});
-
-export const tallyLogs = asyncHandler(async (req, res) => {
-  const data = await TallySyncLog.find().sort('-createdAt').limit(50).lean();
-  res.json({ data });
-});
+export const tallySync = asyncHandler(async (req, res) => res.json({ data: await runTallySync({ mode: req.query.mode || req.body?.mode, fileBuffer: req.file?.buffer, fileName: req.file?.originalname, from: req.query.from, to: req.query.to }) }));
+export const tallyLogs = asyncHandler(async (req, res) => res.json({ data: await TallySyncLog.find().sort('-createdAt').limit(50).lean() }));

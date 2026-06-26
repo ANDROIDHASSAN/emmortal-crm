@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
 
+// Every manufactured battery gets a unique ID at birth: EMM-YYYY-#### — one ID
+// tells its whole story (dispatch → return → rework → close).
 const batterySchema = new mongoose.Schema(
   {
-    // Human-readable unique ID assigned at birth, e.g. EMM-2026-0001
     uniqueId: { type: String, required: true, unique: true, index: true },
     spec: {
       cell: { type: String, default: '' },
@@ -14,13 +15,7 @@ const batterySchema = new mongoose.Schema(
     },
     customer: { type: mongoose.Schema.Types.ObjectId, ref: 'Party' },
     dispatchDate: { type: Date },
-    status: {
-      type: String,
-      enum: ['dispatched', 'returned', 'in_rework', 'repaired', 'closed'],
-      default: 'dispatched',
-      index: true,
-    },
-    productionJob: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductionJob' },
+    status: { type: String, enum: ['dispatched', 'returned', 'in_rework', 'repaired', 'closed'], default: 'dispatched', index: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }

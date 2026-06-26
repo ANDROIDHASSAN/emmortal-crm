@@ -1,25 +1,19 @@
 import { ApiError } from '../utils/ApiError.js';
 
-// validate({ body, query, params }) — each is a zod schema. Parsed/validated values
-// replace the originals (coercion + stripping). Throws 400 with field details on failure.
-// Note: targets Express 4 where req.query / req.params are writable.
+// validate({ body, query, params }) — parse/coerce with zod, 400 on failure.
 export const validate = (schemas) => (req, res, next) => {
   try {
     for (const key of ['body', 'query', 'params']) {
-      if (!schemas[key]) continue;
-      const result = schemas[key].safeParse(req[key]);
-      if (!result.success) {
-        const details = result.error.issues.map((i) => ({
-          path: i.path.join('.'),
-          message: i.message,
-        }));
-        throw ApiError.badRequest(`Invalid ${key}`, details);
+      if (schemas[key]) {
+        const parsed = schemas[key].parse(req[key]);
+        if (key === 'query') Object.assign(req.query, parsed);
+        else req[key] = parsed;
       }
-      req[key] = result.data;
     }
     next();
   } catch (err) {
-    next(err);
+    const details = err.errors?.map((e) => ({ path: e.path.join('.'), message: e.message }));
+    next(ApiError.badRequest('Validation failed', details));
   }
 };
 

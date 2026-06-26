@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// The CRM SPA is served under /app in production (Express serves client/dist at /app).
+// base path: '/app/' for single-origin (Express serves at /app); set VITE_BASE_PATH=/
+// when deploying the SPA standalone on Vercel (served at the domain root).
 export default defineConfig({
   plugins: [react()],
-  base: '/app/',
+  base: process.env.VITE_BASE_PATH || '/app/',
   server: {
     port: 5173,
     proxy: {

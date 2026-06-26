@@ -8,46 +8,11 @@ import { BackupLog } from '../../models/BackupLog.js';
 
 const router = Router();
 
-/**
- * @openapi
- * /health:
- *   get:
- *     tags: [System]
- *     summary: Liveness + DB connectivity check
- *     security: []
- *     responses:
- *       200: { description: OK }
- */
-router.get(
-  '/health',
-  asyncHandler(async (req, res) => {
-    res.json({
-      status: 'ok',
-      time: new Date().toISOString(),
-      db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-      uptime: process.uptime(),
-    });
-  })
-);
+router.get('/health', asyncHandler(async (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString(), db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected', uptime: process.uptime() });
+}));
 
-router.post(
-  '/backup/run',
-  requireAuth,
-  rbac('admin'),
-  asyncHandler(async (req, res) => {
-    const log = await runBackup({ triggeredBy: req.user });
-    res.json({ data: log });
-  })
-);
-
-router.get(
-  '/backup/logs',
-  requireAuth,
-  rbac('admin'),
-  asyncHandler(async (req, res) => {
-    const data = await BackupLog.find().sort('-createdAt').limit(50).lean();
-    res.json({ data });
-  })
-);
+router.post('/backup/run', requireAuth, rbac('admin'), asyncHandler(async (req, res) => res.json({ data: await runBackup({ triggeredBy: req.user }) })));
+router.get('/backup/logs', requireAuth, rbac('admin'), asyncHandler(async (req, res) => res.json({ data: await BackupLog.find().sort('-createdAt').limit(50).lean() })));
 
 export default router;

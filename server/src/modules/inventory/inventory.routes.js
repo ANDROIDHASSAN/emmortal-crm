@@ -2,38 +2,18 @@ import { Router } from 'express';
 import { validate } from '../../middleware/validate.js';
 import { requireAuth } from '../../middleware/auth.js';
 import { rbac } from '../../middleware/rbac.js';
-import {
-  listItems,
-  getItem,
-  createItem,
-  updateItem,
-  lowStock,
-  summary,
-  createMovement,
-  listMovements,
-  itemSchema,
-  itemUpdateSchema,
-  movementSchema,
-} from './inventory.controller.js';
+import { listItems, getItem, createItem, updateItem, lowStock, summary, createMovement, listMovements, itemSchema, itemUpdateSchema, movementSchema } from './inventory.controller.js';
 
 const router = Router();
-const writeRoles = rbac('admin', 'manager', 'staff');
+const write = rbac('admin', 'manager', 'staff');
 
-/**
- * @openapi
- * /items:
- *   get: { tags: [Inventory], summary: List inventory items }
- *   post: { tags: [Inventory], summary: Create item }
- */
 router.get('/items/low-stock', requireAuth, lowStock);
 router.get('/inventory/summary', requireAuth, summary);
-
 router.get('/items', requireAuth, listItems);
-router.post('/items', requireAuth, writeRoles, validate({ body: itemSchema }), createItem);
+router.post('/items', requireAuth, write, validate({ body: itemSchema }), createItem);
 router.get('/items/:id', requireAuth, getItem);
-router.patch('/items/:id', requireAuth, writeRoles, validate({ body: itemUpdateSchema }), updateItem);
-
+router.patch('/items/:id', requireAuth, write, validate({ body: itemUpdateSchema }), updateItem);
 router.get('/stock-movements', requireAuth, listMovements);
-router.post('/stock-movements', requireAuth, writeRoles, validate({ body: movementSchema }), createMovement);
+router.post('/stock-movements', requireAuth, write, validate({ body: movementSchema }), createMovement);
 
 export default router;

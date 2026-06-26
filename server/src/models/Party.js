@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 
+// Customer / supplier master used by accounting + rework.
 const partySchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, index: true },

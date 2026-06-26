@@ -1,16 +1,14 @@
 import mongoose from 'mongoose';
 
-const imageSchema = new mongoose.Schema(
-  { url: { type: String, required: true }, alt: { type: String, default: '' } },
-  { _id: false }
-);
-
+// Storefront catalogue product (public website) — SEO-friendly.
 const productSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    slug: { type: String, required: true, unique: true, trim: true, lowercase: true, index: true },
+    slug: { type: String, required: true, unique: true, index: true },
     shortDesc: { type: String, default: '' },
     longDesc: { type: String, default: '' },
+    category: { type: String, default: 'general' },
+    priceFrom: { type: Number, default: 0 },
     specs: {
       cell: { type: String, default: '' },
       bms: { type: String, default: '' },
@@ -18,15 +16,10 @@ const productSchema = new mongoose.Schema(
       ah: { type: Number, default: 0 },
       sizeMm: { type: String, default: '' },
     },
-    priceFrom: { type: Number, default: 0, min: 0 },
-    images: { type: [imageSchema], default: [] },
-    category: { type: String, default: 'general' },
-    seo: {
-      title: { type: String, default: '' },
-      metaDescription: { type: String, default: '' },
-      keywords: { type: [String], default: [] },
-    },
-    active: { type: Boolean, default: true },
+    images: [{ url: String, alt: String }],
+    applications: { type: [String], default: [] },
+    seo: { title: String, metaDescription: String, keywords: [String] },
+    active: { type: Boolean, default: true, index: true },
     featured: { type: Boolean, default: false },
   },
   { timestamps: true }

@@ -6,13 +6,8 @@ export function ProtectedRoute({ children, roles }) {
   const user = useSelector(selectUser);
   const ready = useSelector(selectReady);
   const location = useLocation();
-
-  if (!ready) {
-    return <div className="flex h-screen items-center justify-center text-slate-400">Loading…</div>;
-  }
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+  if (!ready) return <div className="flex h-screen items-center justify-center text-slate-400">Loading…</div>;
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />;
   if (roles && !roles.includes(user.role)) {
     return (
       <div className="p-10 text-center">

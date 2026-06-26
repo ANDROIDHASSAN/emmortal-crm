@@ -5,48 +5,28 @@ import { RouterProvider } from 'react-router-dom';
 import { store } from './app/store';
 import { router } from './routes';
 import { ToastProvider } from './components/Toast';
-import { setUser, clearUser } from './features/auth/authSlice';
+import { useMeQuery } from './features/auth/authApi';
+import { setUser, setReady, clearUser } from './features/auth/authSlice';
 import './index.css';
 
-// Bootstrap: ask the server who we are (cookie-based) before rendering routes.
-function AuthBootstrap({ children }) {
+// Bootstrap: hydrate the session from /auth/me before rendering the router.
+function Boot() {
   const dispatch = useDispatch();
+  const { data, isError, isLoading } = useMeQuery();
   useEffect(() => {
-    let active = true;
-    (async () => {
-      try {
-        const r = await fetch('/api/v1/auth/me', { credentials: 'include' });
-        if (!active) return;
-        if (r.ok) {
-          const j = await r.json();
-          dispatch(setUser(j.data));
-        } else {
-          // try refresh once
-          const rr = await fetch('/api/v1/auth/refresh', { method: 'POST', credentials: 'include' });
-          if (rr.ok) {
-            const me = await fetch('/api/v1/auth/me', { credentials: 'include' });
-            const j = await me.json();
-            dispatch(setUser(j.data));
-          } else {
-            dispatch(clearUser());
-          }
-        }
-      } catch {
-        if (active) dispatch(clearUser());
-      }
-    })();
-    return () => { active = false; };
-  }, [dispatch]);
-  return children;
+    if (isLoading) return;
+    if (data?.data) dispatch(setUser(data.data));
+    else if (isError) { dispatch(clearUser()); }
+    else dispatch(setReady());
+  }, [data, isError, isLoading, dispatch]);
+  return <RouterProvider router={router} />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Provider store={store}>
       <ToastProvider>
-        <AuthBootstrap>
-          <RouterProvider router={router} />
-        </AuthBootstrap>
+        <Boot />
       </ToastProvider>
     </Provider>
   </React.StrictMode>

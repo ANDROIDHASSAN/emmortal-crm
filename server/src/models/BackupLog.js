@@ -9,7 +9,7 @@ const backupLogSchema = new mongoose.Schema(
     collections: { type: Number, default: 0 },
     documents: { type: Number, default: 0 },
     emailedTo: { type: String },
-    status: { type: String, enum: ['running', 'success', 'failed'], default: 'running' },
+    status: { type: String, enum: ['success', 'failed'], default: 'success' },
     error: { type: String },
   },
   { timestamps: true }

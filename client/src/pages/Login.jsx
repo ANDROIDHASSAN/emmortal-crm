@@ -13,19 +13,12 @@ export default function Login() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector(selectUser);
-
   useEffect(() => { if (user) navigate('/'); }, [user, navigate]);
 
   const submit = async (e) => {
-    e.preventDefault();
-    setErr('');
-    try {
-      const r = await login({ email, password }).unwrap();
-      dispatch(setUser(r.data));
-      navigate('/');
-    } catch (e2) {
-      setErr(apiError(e2));
-    }
+    e.preventDefault(); setErr('');
+    try { const r = await login({ email, password }).unwrap(); dispatch(setUser(r.data)); navigate('/'); }
+    catch (e2) { setErr(apiError(e2)); }
   };
 
   return (
@@ -34,14 +27,8 @@ export default function Login() {
         <h1 className="text-2xl font-extrabold text-slate-800">E-mmortal<span className="text-brand-600">.</span> CRM</h1>
         <p className="mt-1 text-sm text-slate-500">Sign in to the operations dashboard</p>
         <form className="mt-6 space-y-4" onSubmit={submit}>
-          <div>
-            <label className="label">Email</label>
-            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">Password</label>
-            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          </div>
+          <div><label className="label">Email</label><input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+          <div><label className="label">Password</label><input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
           {err && <p className="text-sm font-medium text-red-600">{err}</p>}
           <button className="btn-primary w-full" disabled={isLoading}>{isLoading ? 'Signing in…' : 'Sign in'}</button>
         </form>

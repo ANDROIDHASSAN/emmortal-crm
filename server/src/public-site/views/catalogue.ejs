@@ -10,7 +10,7 @@
       <div class="grid">
         <% products.forEach(function(p){ %>
           <a class="card" href="/products/<%= p.slug %>">
-            <img src="<%= (p.images && p.images[0] && p.images[0].url) || 'https://placehold.co/600x400?text=Battery' %>" alt="<%= (p.images && p.images[0] && p.images[0].alt) || p.name %>" loading="lazy" width="600" height="400" />
+            <img src="<%= (p.images && p.images[0] && p.images[0].url) || 'https://placehold.co/600x400?text=' + encodeURIComponent(p.name) %>" alt="<%= (p.images && p.images[0] && p.images[0].alt) || p.name %>" loading="lazy" width="600" height="400" />
             <div class="body">
               <h3><%= p.name %></h3>
               <div class="specs">
@@ -18,7 +18,7 @@
                 <% if (p.specs && p.specs.ah) { %><span><%= p.specs.ah %>Ah</span><% } %>
                 <% if (p.specs && p.specs.cell) { %><span><%= p.specs.cell %></span><% } %>
               </div>
-              <div class="price">From ₹<%= p.priceFrom.toLocaleString('en-IN') %></div>
+              <div class="price">From ₹<%= (p.priceFrom||0).toLocaleString('en-IN') %></div>
             </div>
           </a>
         <% }) %>

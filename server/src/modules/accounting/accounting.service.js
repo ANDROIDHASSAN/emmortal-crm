@@ -1,11 +1,10 @@
 import { AccountingEntry } from '../../models/AccountingEntry.js';
 import { Party } from '../../models/Party.js';
 import { TallySyncLog } from '../../models/TallySyncLog.js';
-import { round2, sum2 } from '../../utils/helpers.js';
-import { ImportTallyAdapter, HttpTallyAdapter } from '../../integrations/tally/tally.adapter.js';
+import { round2 } from '../../utils/helpers.js';
 import { env } from '../../config/env.js';
+import { ImportTallyAdapter, HttpTallyAdapter } from '../../integrations/tally.adapter.js';
 
-// Resolve (or create) a party by name during Tally import.
 async function resolvePartyByName(name) {
   if (!name) return undefined;
   const trimmed = name.trim();
@@ -14,45 +13,27 @@ async function resolvePartyByName(name) {
   return party._id;
 }
 
-// Upsert vouchers idempotently by tallyGuid. Returns counts.
+// Idempotent upsert by tallyGuid.
 export async function upsertVouchers(vouchers, source = 'tally') {
-  let upserted = 0;
-  const errors = [];
+  let upserted = 0; const errors = [];
   for (const v of vouchers) {
     try {
       const party = await resolvePartyByName(v.partyName);
-      const doc = {
-        kind: v.kind,
-        gst: !!v.gst,
-        amount: round2(v.amount || 0),
-        taxAmount: round2(v.taxAmount || 0),
-        party,
-        voucherNo: v.voucherNo || '',
-        narration: v.narration || '',
-        occurredAt: v.occurredAt ? new Date(v.occurredAt) : new Date(),
-        source,
-      };
+      const doc = { kind: v.kind, gst: !!v.gst, amount: round2(v.amount || 0), taxAmount: round2(v.taxAmount || 0), party, voucherNo: v.voucherNo || '', narration: v.narration || '', occurredAt: v.occurredAt ? new Date(v.occurredAt) : new Date(), source };
       if (v.tallyGuid) {
-        const r = await AccountingEntry.updateOne(
-          { tallyGuid: v.tallyGuid },
-          { $set: { ...doc, tallyGuid: v.tallyGuid } },
-          { upsert: true }
-        );
+        const r = await AccountingEntry.updateOne({ tallyGuid: v.tallyGuid }, { $set: { ...doc, tallyGuid: v.tallyGuid } }, { upsert: true });
         if (r.upsertedCount || r.modifiedCount) upserted += 1;
-      } else {
-        await AccountingEntry.create(doc);
-        upserted += 1;
-      }
-    } catch (e) {
-      errors.push(e.message);
-    }
+      } else { await AccountingEntry.create(doc); upserted += 1; }
+    } catch (e) { errors.push(e.message); }
   }
   return { upserted, errors };
 }
 
+// Unified Tally sync: live HTTP gateway when mode='http', else file upload.
+// Never blocks the app — failures are logged and surfaced, not thrown to cron.
 export async function runTallySync({ mode, fileBuffer, fileName, from, to }) {
   const useMode = mode || env.TALLY_SYNC_MODE || 'import';
-  const log = await TallySyncLog.create({ mode: useMode, status: 'running' });
+  const log = await TallySyncLog.create({ mode: useMode === 'http' ? 'http' : 'import', status: 'running' });
   try {
     let adapter;
     if (useMode === 'http') {
@@ -64,70 +45,40 @@ export async function runTallySync({ mode, fileBuffer, fileName, from, to }) {
     }
     const vouchers = await adapter.fetchVouchers();
     const { upserted, errors } = await upsertVouchers(vouchers, 'tally');
-    log.recordsIn = vouchers.length;
-    log.recordsUpserted = upserted;
-    log.errors = errors;
-    log.finishedAt = new Date();
-    log.status = errors.length ? 'partial' : 'success';
+    Object.assign(log, { recordsIn: vouchers.length, recordsUpserted: upserted, errors, finishedAt: new Date(), status: errors.length ? 'partial' : 'success' });
     await log.save();
     return log.toObject();
   } catch (err) {
-    log.finishedAt = new Date();
-    log.status = 'failed';
-    log.errors = [err.message];
+    Object.assign(log, { status: 'failed', errors: [err.message], finishedAt: new Date() });
     await log.save();
     throw err;
   }
 }
 
-// Summation + difference view across a window, optionally GST-filtered.
+// Backwards-compatible alias (upload path).
+export const runTallyImport = (args) => runTallySync({ ...args, mode: 'import' });
+
+// Summation + GST split + difference across a time window.
 export async function entrySummary({ from, to, gst }) {
   const match = {};
-  if (from || to) {
-    match.occurredAt = {};
-    if (from) match.occurredAt.$gte = new Date(from);
-    if (to) match.occurredAt.$lte = new Date(to);
-  }
-  if (gst !== undefined) match.gst = gst;
-
-  const rows = await AccountingEntry.aggregate([
-    { $match: match },
-    {
-      $group: {
-        _id: { kind: '$kind', gst: '$gst' },
-        amount: { $sum: '$amount' },
-        tax: { $sum: '$taxAmount' },
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-
-  const buckets = { sales: 0, purchase: 0, expense: 0 };
-  const gstSplit = { gst: 0, nonGst: 0 };
-  let totalTax = 0;
+  if (from || to) { match.occurredAt = {}; if (from) match.occurredAt.$gte = new Date(from); if (to) match.occurredAt.$lte = new Date(to); }
+  if (gst !== undefined) match.gst = gst === 'true' || gst === true;
+  const rows = await AccountingEntry.aggregate([{ $match: match }, { $group: { _id: { kind: '$kind', gst: '$gst' }, amount: { $sum: '$amount' }, tax: { $sum: '$taxAmount' }, count: { $sum: 1 } } }]);
+  const buckets = { sales: 0, purchase: 0, expense: 0 }; const gstSplit = { gst: 0, nonGst: 0 }; let totalTax = 0;
   for (const r of rows) {
     const total = round2(r.amount + r.tax);
     buckets[r._id.kind] = round2((buckets[r._id.kind] || 0) + total);
     totalTax = round2(totalTax + r.tax);
-    if (r._id.gst) gstSplit.gst = round2(gstSplit.gst + total);
-    else gstSplit.nonGst = round2(gstSplit.nonGst + total);
+    if (r._id.gst) gstSplit.gst = round2(gstSplit.gst + total); else gstSplit.nonGst = round2(gstSplit.nonGst + total);
   }
-  const difference = round2(buckets.sales - (buckets.purchase + buckets.expense));
-  return { buckets, gstSplit, totalTax, difference, breakdown: rows };
+  return { buckets, gstSplit, totalTax, difference: round2(buckets.sales - (buckets.purchase + buckets.expense)), breakdown: rows };
 }
 
-// Per-party running ledger (debtor/creditor drilldown).
 export async function partyLedger(partyId) {
   const party = await Party.findById(partyId).lean();
   if (!party) return null;
   const entries = await AccountingEntry.find({ party: partyId }).sort('occurredAt').lean();
   let balance = party.openingBalance || 0;
-  const ledger = entries.map((e) => {
-    // Sales increase debtor receivable (+), purchases/expenses increase payable (-).
-    const total = round2(e.amount + (e.taxAmount || 0));
-    const delta = e.kind === 'sales' ? total : -total;
-    balance = round2(balance + delta);
-    return { ...e, delta, balance };
-  });
+  const ledger = entries.map((e) => { const total = round2(e.amount + (e.taxAmount || 0)); const delta = e.kind === 'sales' ? total : -total; balance = round2(balance + delta); return { ...e, delta, balance }; });
   return { party, openingBalance: party.openingBalance || 0, ledger, closingBalance: balance };
 }

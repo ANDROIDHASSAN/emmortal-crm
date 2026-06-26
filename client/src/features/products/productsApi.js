@@ -1,13 +1,11 @@
 import { apiSlice } from '../../api/apiSlice';
-import { qs } from '../inventory/inventoryApi';
+import { qs } from '../../lib/format';
 
 export const productsApi = apiSlice.injectEndpoints({
   endpoints: (b) => ({
-    listProducts: b.query({ query: (params) => `/products${qs(params)}`, providesTags: ['Product'] }),
-    getProduct: b.query({ query: (id) => `/products/${id}`, providesTags: ['Product'] }),
+    listProducts: b.query({ query: (p) => `/products${qs(p)}`, providesTags: ['Product'] }),
     createProduct: b.mutation({ query: (body) => ({ url: '/products', method: 'POST', body }), invalidatesTags: ['Product'] }),
     updateProduct: b.mutation({ query: ({ id, ...body }) => ({ url: `/products/${id}`, method: 'PATCH', body }), invalidatesTags: ['Product'] }),
   }),
 });
-
-export const { useListProductsQuery, useGetProductQuery, useCreateProductMutation, useUpdateProductMutation } = productsApi;
+export const { useListProductsQuery, useCreateProductMutation, useUpdateProductMutation } = productsApi;

@@ -4,17 +4,9 @@ const authSlice = createSlice({
   name: 'auth',
   initialState: { user: null, ready: false },
   reducers: {
-    setUser(state, action) {
-      state.user = action.payload;
-      state.ready = true;
-    },
-    clearUser(state) {
-      state.user = null;
-      state.ready = true;
-    },
-    setReady(state) {
-      state.ready = true;
-    },
+    setUser(state, action) { state.user = action.payload; state.ready = true; },
+    clearUser(state) { state.user = null; state.ready = true; },
+    setReady(state) { state.ready = true; },
   },
 });
 

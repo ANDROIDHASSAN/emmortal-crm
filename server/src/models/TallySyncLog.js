@@ -2,17 +2,15 @@ import mongoose from 'mongoose';
 
 const tallySyncLogSchema = new mongoose.Schema(
   {
-    mode: { type: String, enum: ['import', 'http'], required: true },
-    startedAt: { type: Date, default: Date.now },
-    finishedAt: { type: Date },
+    mode: { type: String, enum: ['import', 'http'], default: 'import' },
+    status: { type: String, enum: ['running', 'success', 'partial', 'failed'], default: 'running' },
     recordsIn: { type: Number, default: 0 },
     recordsUpserted: { type: Number, default: 0 },
     errors: { type: [String], default: [] },
-    status: { type: String, enum: ['running', 'success', 'partial', 'failed'], default: 'running' },
+    finishedAt: { type: Date },
   },
-  { timestamps: true, suppressReservedKeysWarning: true }
+  { timestamps: true }
 );
 
-export const TallySyncLog =
-  mongoose.models.TallySyncLog || mongoose.model('TallySyncLog', tallySyncLogSchema);
+export const TallySyncLog = mongoose.models.TallySyncLog || mongoose.model('TallySyncLog', tallySyncLogSchema);
 export default TallySyncLog;

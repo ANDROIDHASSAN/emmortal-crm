@@ -7,3 +7,6 @@ coverage/
 *.log
 backups/
 .DS_Store
+
+# Local uploaded files (Cloudinary fallback)
+server/uploads/
