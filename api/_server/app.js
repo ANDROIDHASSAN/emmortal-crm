@@ -21,15 +21,18 @@ export function createApp() {
   app.set('views', path.resolve(__dirname, 'public-site/views'));
 
   app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-  // CORS: allow local Vite (dev) + the deployed frontend origin(s) from CLIENT_ORIGIN.
-  // credentials:true is required so the cross-site auth cookie is sent/received.
+  // CORS: allow same-origin (single-folder deploy: SPA + API share one host), the
+  // local Vite dev ports, and any explicit cross-origin frontends in CLIENT_ORIGIN.
+  // credentials:true is required so the auth cookie is sent/received.
   const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:5174', ...env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean)];
-  app.use(cors({
-    origin(origin, cb) {
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error(`CORS blocked: ${origin}`));
-    },
-    credentials: true,
+  app.use(cors((req, cb) => {
+    const origin = req.header('Origin');
+    const host = req.header('Host');
+    // Same-origin (origin's host matches the request Host) is always allowed —
+    // this is the single-origin case where the SPA calls its own API.
+    const sameOrigin = origin && host && origin.replace(/^https?:\/\//, '') === host;
+    const allowed = !origin || sameOrigin || allowedOrigins.includes(origin);
+    cb(null, { origin: allowed, credentials: true });
   }));
 
   app.use(express.json({ limit: '5mb' }));
