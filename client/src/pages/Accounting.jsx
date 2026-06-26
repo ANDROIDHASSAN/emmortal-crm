@@ -4,6 +4,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import StatCard from '../components/StatCard';
 import FileUpload from '../components/FileUpload';
+import Icon from '../components/Icon';
 import { PageHeader, Badge, Field, SectionCard } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { inr, fmtDate, apiError } from '../lib/format';
@@ -52,16 +53,16 @@ export default function Accounting() {
     <div>
       <PageHeader title="Accounting" subtitle="GST & non-GST books — powered by your Tally data"
         actions={<>
-          <button className="btn-ghost" onClick={() => { const p = new URLSearchParams(Object.entries(range).filter(([, v]) => v)); window.open(`${API_BASE}/accounting/entries/export?${p}`, '_blank'); }}>⬇ Export CSV</button>
-          <button className="btn-ghost" onClick={() => setPartyModal(true)}>+ Party</button>
-          <button className="btn-primary" onClick={() => setEntryModal(true)}>+ Entry</button>
+          <button className="btn-ghost" onClick={() => { const p = new URLSearchParams(Object.entries(range).filter(([, v]) => v)); window.open(`${API_BASE}/accounting/entries/export?${p}`, '_blank'); }}><Icon name="download" className="h-4 w-4" /> Export CSV</button>
+          <button className="btn-ghost" onClick={() => setPartyModal(true)}><Icon name="plus" className="h-4 w-4" /> Party</button>
+          <button className="btn-primary" onClick={() => setEntryModal(true)}><Icon name="plus" className="h-4 w-4" /> Entry</button>
         </>} />
 
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Sales" value={inr(s.buckets?.sales)} icon="📈" accent="emerald" />
-        <StatCard label="Purchase" value={inr(s.buckets?.purchase)} icon="📥" accent="slate" />
-        <StatCard label="Expense" value={inr(s.buckets?.expense)} icon="💸" accent="amber" />
-        <StatCard label="Difference" value={inr(s.difference)} sub={`GST ${inr(s.gstSplit?.gst)} · non-GST ${inr(s.gstSplit?.nonGst)}`} icon="🧮" accent="brand" />
+        <StatCard label="Sales" value={inr(s.buckets?.sales)} highlight />
+        <StatCard label="Purchase" value={inr(s.buckets?.purchase)} />
+        <StatCard label="Expense" value={inr(s.buckets?.expense)} />
+        <StatCard label="Difference" value={inr(s.difference)} sub={`GST ${inr(s.gstSplit?.gst)} · non-GST ${inr(s.gstSplit?.nonGst)}`} />
       </div>
 
       <SectionCard title="Time-machine filters">
@@ -84,8 +85,8 @@ export default function Accounting() {
         <SectionCard title="Tally sync">
           <p className="mb-3 text-sm text-slate-500">Two ways to bring Tally data in — both map to the same books, idempotent by voucher GUID:</p>
           <div className="flex flex-wrap items-center gap-3">
-            <FileUpload accept=".csv,.xml" label="⬆ Upload Tally export" onUpload={(fd) => doSync(fd)} busy={syncing} />
-            <button className="btn-ghost" disabled={syncing} onClick={async () => { try { const r = await tallySync({ mode: 'http' }).unwrap(); toast.success(`Tally live: ${r.data.recordsUpserted}/${r.data.recordsIn} vouchers`); } catch (e) { toast.error(apiError(e) || 'Tally gateway unreachable — set TALLY_HTTP_URL'); } }}>🔌 Sync from Tally (live)</button>
+            <FileUpload accept=".csv,.xml" label="Upload Tally export" onUpload={(fd) => doSync(fd)} busy={syncing} />
+            <button className="btn-ghost" disabled={syncing} onClick={async () => { try { const r = await tallySync({ mode: 'http' }).unwrap(); toast.success(`Tally live: ${r.data.recordsUpserted}/${r.data.recordsIn} vouchers`); } catch (e) { toast.error(apiError(e) || 'Tally gateway unreachable — set TALLY_HTTP_URL'); } }}><Icon name="plug" className="h-4 w-4" /> Sync from Tally (live)</button>
           </div>
           <p className="mt-2 text-xs text-slate-400">Live sync needs <code className="rounded bg-slate-100 px-1">TALLY_HTTP_URL</code> in .env (Tally HTTP-XML gateway). Falls back to upload if offline.</p>
           <div className="mt-4">{(tallyLogs?.data || []).slice(0, 5).map((l) => <p key={l._id} className="text-xs text-slate-500">{fmtDate(l.createdAt)} — {l.mode} {l.status}: {l.recordsUpserted}/{l.recordsIn}</p>)}</div>

@@ -66,10 +66,10 @@ export default function Inventory() {
         actions={<button className="btn-primary" onClick={() => { setF(blankItem); setItemModal({}); }}>+ Item</button>} />
 
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Stock value" value={inr(s.onHandValue)} icon="📦" />
-        <StatCard label="Items" value={s.itemCount ?? '—'} accent="slate" />
-        <StatCard label="Low stock" value={s.lowStockCount ?? '—'} icon="⚠️" accent="amber" />
-        <StatCard label="Rejected (loss)" value={inr(s.rejection?.value)} sub={`${s.rejection?.qty ?? 0} units`} icon="❌" accent="red" />
+        <StatCard label="Stock value" value={inr(s.onHandValue)} highlight />
+        <StatCard label="Items" value={s.itemCount ?? '—'} />
+        <StatCard label="Low stock" value={s.lowStockCount ?? '—'} />
+        <StatCard label="Rejected (loss)" value={inr(s.rejection?.value)} sub={`${s.rejection?.qty ?? 0} units`} />
       </div>
 
       <div className="mb-4 flex gap-2 border-b border-slate-200">

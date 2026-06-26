@@ -5,6 +5,7 @@ import { useListPartiesQuery } from '../features/accounting/accountingApi';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import StatCard from '../components/StatCard';
+import Icon from '../components/Icon';
 import { PageHeader, Badge, Field, SectionCard } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { inr, fmtDate, toDateInput, apiError } from '../lib/format';
@@ -59,9 +60,9 @@ export default function Rework() {
         actions={<button className="btn-primary" onClick={() => setBatModal(true)}>+ Battery</button>} />
 
       <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <StatCard label="Total rework loss" value={inr(loss?.data?.total)} icon="🔧" accent="red" />
-        <StatCard label="Repaired batteries" value={aging?.data?.repairedCount ?? '—'} accent="slate" />
-        <StatCard label="Avg turnaround" value={`${aging?.data?.avgTurnaroundDays ?? 0} days`} icon="⏱️" accent="amber" />
+        <StatCard label="Total rework loss" value={inr(loss?.data?.total)} highlight />
+        <StatCard label="Repaired batteries" value={aging?.data?.repairedCount ?? '—'} />
+        <StatCard label="Avg turnaround" value={`${aging?.data?.avgTurnaroundDays ?? 0} days`} />
       </div>
 
       <SectionCard title="Battery lookup">
@@ -82,7 +83,7 @@ export default function Rework() {
             {h.qrDataUrl && (
               <div className="mt-3 flex items-center gap-3">
                 <img src={h.qrDataUrl} alt={h.battery.uniqueId} className="h-20 w-20 rounded border border-slate-200" />
-                <button className="btn-ghost text-xs" onClick={printLabel}>🖨 Print label</button>
+                <button className="btn-ghost text-xs" onClick={printLabel}><Icon name="printer" className="h-4 w-4" /> Print label</button>
               </div>
             )}
             <div className="mt-4 space-y-3">

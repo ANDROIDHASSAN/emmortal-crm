@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDayBoardQuery, useCreateJobMutation, useUpdateJobMutation } from '../features/production/productionApi';
 import Modal from '../components/Modal';
 import StatCard from '../components/StatCard';
+import Icon from '../components/Icon';
 import { PageHeader, Badge, Field } from '../components/ui';
 import { useToast } from '../components/Toast';
 import { toDateInput, fmtDateTime, apiError } from '../lib/format';
@@ -44,9 +45,9 @@ export default function Production() {
             <div className="min-w-[140px]"><div className="font-semibold text-slate-800">{j.title || `${j.voltage}V ${j.ah}Ah`}</div><div className="text-xs text-slate-400">{j.voltage}V · {j.ah}Ah · Qty {j.qty}{j.customer ? ` · ${j.customer}` : ''}</div>{j.leadRef && <span className="text-[10px] font-semibold text-emerald-600">↳ from won lead</span>}</div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={j.status === 'on'} onChange={(e) => patch(j._id, { status: e.target.checked ? 'on' : 'off' })} /><Badge>{j.status}</Badge></label>
             <select className="input max-w-[160px]" value={j.progress} onChange={(e) => patch(j._id, { progress: e.target.value })}>{PROGRESS.map((p) => <option key={p} value={p}>{p.replace('_', ' ')}</option>)}</select>
-            <div className="ml-auto flex items-center gap-3">{j.comments?.length > 0 && <span className="text-xs text-slate-400">{j.comments.length} 💬</span>}<button className="btn-ghost px-2 py-1 text-xs" onClick={() => setCommentFor(j._id)}>Comment</button></div>
-            {j.batteries?.length > 0 && <div className="w-full border-t border-slate-100 pt-2 text-xs text-emerald-700">🔋 Battery IDs: {j.batteries.map((b) => b.uniqueId).join(', ')}</div>}
-            {j.comments?.length > 0 && <div className="w-full border-t border-slate-100 pt-2 text-xs text-slate-500">{j.comments.map((cm, i) => <div key={i}>💬 {cm.text} <span className="text-slate-300">· {fmtDateTime(cm.at)}</span></div>)}</div>}
+            <div className="ml-auto flex items-center gap-3">{j.comments?.length > 0 && <span className="inline-flex items-center gap-1 text-xs text-slate-400"><Icon name="chat" className="h-3.5 w-3.5" /> {j.comments.length}</span>}<button className="btn-ghost px-2 py-1 text-xs" onClick={() => setCommentFor(j._id)}>Comment</button></div>
+            {j.batteries?.length > 0 && <div className="flex w-full items-center gap-1.5 border-t border-slate-100 pt-2 text-xs text-emerald-700"><Icon name="battery" className="h-4 w-4 shrink-0" /> Battery IDs: {j.batteries.map((b) => b.uniqueId).join(', ')}</div>}
+            {j.comments?.length > 0 && <div className="w-full border-t border-slate-100 pt-2 text-xs text-slate-500">{j.comments.map((cm, i) => <div key={i} className="flex items-start gap-1.5"><Icon name="chat" className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" /><span>{cm.text} <span className="text-slate-300">· {fmtDateTime(cm.at)}</span></span></div>)}</div>}
           </div>
         ))}
       </div>
