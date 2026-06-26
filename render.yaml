@@ -1,13 +1,15 @@
-# Render Blueprint for the backend (Express API + EJS website).
+# Render Blueprint — single service: Express API + EJS website + the built
+# React CRM (served at /app). One deploy, one URL, MongoDB Atlas. Cron works.
 # In Render: New → Blueprint → connect this repo. Set the sync:false secrets
 # in the dashboard after the service is created.
 services:
   - type: web
-    name: emmortal-crm-api
+    name: emmortal-crm
     runtime: node
     plan: free
     rootDir: .
-    buildCommand: npm install
+    # install deps, then build the client so the server can serve it at /app
+    buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/v1/health
     envVars:
