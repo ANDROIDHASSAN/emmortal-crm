@@ -3,9 +3,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Load root .env (monorepo) then optional server/.env override.
+// Load the root .env for local dev. On Vercel/Render, env vars come from the
+// platform (process.env), so a missing file here is fine.
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const num = (v, d) => (v === undefined || v === '' ? d : Number(v));
 

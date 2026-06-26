@@ -41,8 +41,9 @@ export function createApp() {
 
   // Single-origin: serve the built React CRM at /app so the website and CRM
   // live together (website "CRM Login" → /app/login works without a 2nd port).
-  // Build the client first: `npm run build`. (For hot-reload dev use Vite :5173.)
-  const clientDist = path.resolve(__dirname, '../../client/dist');
+  // Build first: `npm run build` → dist/app. (On Vercel, /app is served by the
+  // CDN; this block covers local `npm start` and Render.)
+  const clientDist = path.resolve(__dirname, '../../dist/app');
   if (fs.existsSync(clientDist)) {
     app.use('/app', express.static(clientDist));
     app.get('/app/*', (req, res) => res.sendFile(path.join(clientDist, 'index.html')));
