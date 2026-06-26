@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
@@ -30,9 +30,16 @@ export const router = createBrowserRouter(
         { path: 'settings', element: <ProtectedRoute roles={['admin']}><Settings /></ProtectedRoute> },
       ],
     },
+    // Unknown paths → redirect to the dashboard (instead of the default error boundary).
+    { path: '*', element: <Navigate to="/" replace /> },
   ],
-  // Derive the router basename from Vite's resolved base ('/app/' single-origin, '/' on Vercel).
-  { basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/' }
+  {
+    // Derive the router basename from Vite's resolved base ('/app/' single-origin, '/' on Vercel).
+    basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
+    // Opt in to React Router v7 behaviour now (v7_startTransition is set on
+    // <RouterProvider> in main.jsx; this one belongs on the data router).
+    future: { v7_relativeSplatPath: true },
+  }
 );
 
 export default router;

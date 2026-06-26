@@ -19,7 +19,7 @@ function Boot() {
     else if (isError) { dispatch(clearUser()); }
     else dispatch(setReady());
   }, [data, isError, isLoading, dispatch]);
-  return <RouterProvider router={router} />;
+  return <RouterProvider router={router} future={{ v7_startTransition: true }} />;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
