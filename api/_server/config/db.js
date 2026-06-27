@@ -14,7 +14,7 @@ let connected = false;
 
 export async function connectDB(uri = env.MONGODB_URI) {
   if (connected) return mongoose.connection;
-  if (!uri) throw new Error('MONGODB_URI is not set');
+  if (!uri) throw new Error('MONGODB_URI is not set — add it in your hosting env vars (Vercel: Settings → Environment Variables → Production) and redeploy');
   await mongoose.connect(uri, { serverSelectionTimeoutMS: 20000, autoIndex: !env.isProd });
   connected = true;
   console.log(`[db] connected: ${mongoose.connection.host}/${mongoose.connection.name}`);

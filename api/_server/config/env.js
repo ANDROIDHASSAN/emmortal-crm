@@ -8,12 +8,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const num = (v, d) => (v === undefined || v === '' ? d : Number(v));
+const isProdEnv = (process.env.NODE_ENV || 'development') === 'production';
 
 export const env = {
   NODE_ENV: process.env.NODE_ENV || 'development',
-  isProd: (process.env.NODE_ENV || 'development') === 'production',
+  isProd: isProdEnv,
   PORT: num(process.env.PORT, 3000),
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/emmortal_crm',
+  // In production we never fall back to localhost — a missing URI must fail loudly
+  // (see connectDB) so the cause is obvious instead of a cryptic ECONNREFUSED.
+  MONGODB_URI: process.env.MONGODB_URI || (isProdEnv ? '' : 'mongodb://127.0.0.1:27017/emmortal_crm'),
   DNS_SERVERS: process.env.DNS_SERVERS || '',
 
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || 'dev-access-secret-change-me',
