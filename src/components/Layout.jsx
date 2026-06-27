@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { selectUser, clearUser } from '../features/auth/authSlice';
 import { useLogoutMutation } from '../features/auth/authApi';
 import NotificationBell from './NotificationBell';
+import HeaderSearch from './HeaderSearch';
 import Icon from './Icon';
 
 const nav = [
@@ -99,11 +100,7 @@ export function Layout() {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5"><path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" /></svg>
             </button>
 
-            <div className="relative hidden max-w-md flex-1 md:block">
-              <Icon name="search" className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input placeholder="Search…" className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-12 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-100" />
-              <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">⌘F</kbd>
-            </div>
+            <HeaderSearch items={items} />
 
             <div className="ml-auto flex items-center gap-2.5">
               <button className="icon-btn" aria-label="Messages"><Icon name="mail" className="h-5 w-5" /></button>
